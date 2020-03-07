@@ -91,7 +91,7 @@ class GoGUI:
 basic_board = Board.Board()
 basic_board.points[3] = Board.STONE_WHITE
 basic_board.points[4] = Board.STONE_WHITE
-basic_board.points[5] = Board.STONE_BLACK
+basic_board.points[29] = Board.STONE_BLACK
 
 g = GoGUI(basic_board)
 g.mainLoop()
