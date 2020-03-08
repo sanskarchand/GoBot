@@ -96,8 +96,9 @@ class Board:
         
         points_white = white_territory
         points_black = black_territory
-
-        return (points_white, points_black), (prisoners_of_white, prisoners_of_black)
+    
+        print("ROOOOOOOOOOOOOOOOT", points_white,points_black, prisoners_of_white, prisoners_of_black)
+        return points_white, points_black, prisoners_of_white, prisoners_of_black
         
     # note: implement this in a separate Game class; does not belong here
     #   as we need info about player turns and passes

@@ -170,16 +170,24 @@ class Graph:
             action = random.choice(vert_game_state.board_desc.getPossibleMoveList())
             vert_game_state =  copy.copy(vert_game_state)
             vert_game_state.takeTurn(action)
+
+            # take a random black turn
+            free_moves = []
+            for i, p in enumerate(vert_game_state.board_desc.points):
+                if p == Board.POINT_EMPTY:
+                    free_moves.append(i)
+
+            p_choice = random.choice(free_moves)
+            vert_game_state.takeTurnBlack(p_choice)
+
             #self.gui.board_desc = vert_game_state.board_desc
             #self.board_steps.append(vert_game_state.board_desc)
             #RECORD
 
         
-        print("UTILITY is: ", vert_game_state.getUtility())
         return vert_game_state.getUtility()
     
     def backPropagate(self, vertex, utility):
-
         while vertex is not None:
             vertex.num_visited += 1
             vertex.utility += utility

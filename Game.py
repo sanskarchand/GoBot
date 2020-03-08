@@ -86,15 +86,20 @@ class Game:
         self.step += 1
 
     def getUtility(self):
-        (p_w, p_b), (pri_w, pri_b) = self.board_desc.evaluateBoardState()
+        p_w, p_b, pri_w, pri_b = self.board_desc.evaluateBoardState()
         #p_w += self.white_points
         #p_b += self.black_points
+        #p_w += pri_w
+        #p_b += pri_b
+        
         p_w += pri_w
         p_b += pri_b
-        
         #print("BLACK's prisoners: ", self.black_points)
         #print("WHITE's prisones: ", self.white_points)
-        return p_w/(p_w+p_b)
+
+        diff = (p_w - p_b)/(p_w + p_b + 2)
+        return diff
+
 
 
     def __copy__(self):
