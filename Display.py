@@ -1,5 +1,6 @@
 import pygame as pg
 import Board 
+
 WIDTH = 640
 HEIGHT = 640
 
@@ -9,7 +10,9 @@ WHITE = ( 255, 255, 255 )
 BLACK = ( 0, 0, 0 )
 BROWN_1 = ( 215, 165, 7 )
 BLUE_1 = ( 182, 233, 237 )
+BLUE_D = () # darker
 RED_1 = ( 148, 16, 16 )
+PINK_1 = ( 212, 32, 164 )
 
 class GoGUI:
 
@@ -24,6 +27,7 @@ class GoGUI:
         self.starty = WIDTH/2 - BOARD_SIZE/2
         self.stone_rad = 20
         self.draw_territory = True
+        self.draw_prisoners = True
     
     def drawGrid(self):
         self.cell_size = (int)(BOARD_SIZE / (self.board_desc.size+1))
@@ -77,6 +81,11 @@ class GoGUI:
             p_y = int(self.starty + required_dy * pad_y)
             
             pg.draw.circle(self.screen, stone_col, (p_x,p_y), self.stone_rad, 0) # width 0, fill
+
+            if self.draw_prisoners:
+                val = self.board_desc.prisoners[idx]
+                if val != 'o':
+                    pg.draw.circle(self.screen, PINK_1, (p_x, p_y), self.stone_rad-10, 0)
     
     def drawTerritory(self):
 
@@ -148,6 +157,8 @@ basic_board.points[4] = Board.STONE_WHITE
 basic_board.points[29] = Board.STONE_BLACK
 basic_board.points[80] = Board.STONE_WHITE # last place
 '''
+
+
 basic_board = parseBoardFromFile("config.goconf", 9)
 (pts_white, pts_black) = basic_board.evaluateBoardState()
 print("POINTS_WHITE = ", pts_white)

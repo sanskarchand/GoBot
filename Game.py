@@ -15,4 +15,6 @@ class Game:
 
         self.black_points = 0
         self.white_points = 0
+
+    def setCurrentState(s
     
