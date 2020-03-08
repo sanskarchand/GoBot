@@ -20,7 +20,7 @@ def predicateBlackOrEmpty(point):
 
 
 # This acts as the state
-class  Board:
+class Board:
 
     def __init__(self):
         self.size = 9
@@ -28,6 +28,7 @@ class  Board:
         self.points = []
         self.territory = []
         self.prisoners = []
+        self.is_terminal = False # set by Game
         self.resetBoard()
 
     def resetBoard(self):
@@ -62,6 +63,8 @@ class  Board:
         black_territory = 0
         points_white = 0
         points_black = 0
+        prisoners_of_white = 0
+        prisoners_of_black = 0
     
 
         for idx, ep in enumerate(self.points):
@@ -83,12 +86,18 @@ class  Board:
             
             if self.checkIfPrisoner(idx, ep):
                 val = 'w' if ep == STONE_WHITE else 'b'
+                
+                if val == 'w':
+                    prisoners_of_white += 1
+                else:
+                    prisoners_of_black += 1
+
                 self.prisoners[idx] = val
         
         points_white = white_territory
         points_black = black_territory
 
-        return (points_white, points_black)
+        return (points_white, points_black), (prisoners_of_white, prisoners_of_black)
         
     # note: implement this in a separate Game class; does not belong here
     #   as we need info about player turns and passes
@@ -228,7 +237,9 @@ class  Board:
 
 
         return total_libs == 0
-
+    
+    def isTerminalState(self):
+        return self.terminal
 
     def __copy__(self):
         
@@ -239,5 +250,6 @@ class  Board:
         result.points = self.points.copy()
         result.territory = self.territory.copy()
         result.prisoners = self.prisoners.copy()
+        result.is_terminal = self.is_terminal
         
         return result

@@ -1,5 +1,6 @@
 import pygame as pg
-import Board 
+import Board, Game, Graph
+import time
 
 WIDTH = 640
 HEIGHT = 640
@@ -10,7 +11,7 @@ WHITE = ( 255, 255, 255 )
 BLACK = ( 0, 0, 0 )
 BROWN_1 = ( 215, 165, 7 )
 BLUE_1 = ( 182, 233, 237 )
-BLUE_D = () # darker
+BLUE_D = ( 49, 45, 169 ) # darker
 RED_1 = ( 148, 16, 16 )
 PINK_1 = ( 212, 32, 164 )
 
@@ -22,12 +23,14 @@ class GoGUI:
 
         self.board_desc = board_desc
 
-        self.cell_size = 0
+        self.cell_size = (int)(BOARD_SIZE/(self.board_desc.size+1))
         self.startx = WIDTH/2 - BOARD_SIZE/2
         self.starty = WIDTH/2 - BOARD_SIZE/2
         self.stone_rad = 20
         self.draw_territory = True
         self.draw_prisoners = True
+        self.statelist = []
+        self.collide_rects = []
     
     def drawGrid(self):
         self.cell_size = (int)(BOARD_SIZE / (self.board_desc.size+1))
@@ -62,6 +65,30 @@ class GoGUI:
             pg.draw.line( self.screen, BLACK, point_from, point_to, 2 )
                             
             curr_x += pad_x
+
+    def debugDrawRects(self):
+        for rect in self.collide_rects:
+            pg.draw.rect(self.screen, RED_1, rect)
+
+    def placeCollideRects(self):
+        
+        pad_x = pad_y = self.cell_size
+
+        for idx, point in enumerate(self.board_desc.points):
+            
+            required_dy = idx // (self.board_desc.size)
+            required_dx = idx % (self.board_desc.size)
+
+
+            p_x = int(self.startx + required_dx * pad_x)
+            p_y = int(self.starty + required_dy * pad_y)
+
+
+            # center is p_x, p_y
+            rect_size = 6
+            
+            rect = pg.Rect(p_x - rect_size , p_y -rect_size, rect_size*2, rect_size*2)
+            self.collide_rects.append(rect)
     
     def drawStones(self):
 
@@ -99,28 +126,79 @@ class GoGUI:
             required_dy = idx // (self.board_desc.size)
             required_dx = idx % (self.board_desc.size)
 
-            area_col = BLUE_1 if point == 'w' else RED_1
+            area_col = BLUE_D if point == 'w' else RED_1
 
             p_x = int(self.startx + required_dx * pad_x)
             p_y = int(self.starty + required_dy * pad_y)
             
             pg.draw.circle(self.screen, area_col, (p_x,p_y), self.stone_rad-10, 1) # width 0, fill
 
-
+    def getBlackAction(self, button_pressed, mouse_pos):
+        if not button_pressed:
+            return
+        
+        for idx, rect in enumerate(self.collide_rects):
+            if rect.collidepoint(mouse_pos):
+                return idx
+        return None
 
     def mainLoop(self):
+        i = 0 
+        #Initialization of game
+        first_state = self.board_desc
+        game = Game.Game(first_state)
+        search_graph = Graph.Graph()
+        root_vertex = Graph.Vertex(game, "root")
+    
+        self.placeCollideRects()
+
         while True:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     return
+
+            left_butn, _, _ = pg.mouse.get_pressed()
+            mouse_pos = pg.mouse.get_pos()
+
             
+            if game.turn == Game.TURN_BLACK:
+                res = self.getBlackAction(left_butn, mouse_pos)
+                if res is not None:
+                    game.turn = Game.TURN_WHITE
+                    game.takeTurnBlack(res)
+
             self.screen.fill(BLUE_1)
             self.drawGrid()
             self.drawStones()
+            self.debugDrawRects()
             if self.draw_territory:
                 self.drawTerritory()
             pg.display.flip()
+            
 
+             
+            if game.turn != Game.TURN_BLACK:
+                print("WHITE TO GO")
+                new_root_vert = Graph.Vertex(game, "root")
+                print("board state is: ")
+                for i,pt in enumerate(game.board_desc.points):
+                    if pt != Board.POINT_EMPTY:
+                        print("p=", i)
+                best_move = search_graph.monteCarloWithUCTSearch(new_root_vert)
+                print("SEARCH FINISHED")
+                print("BEST MOVE = ", best_move)
+                game.takeTurn(best_move)
+                game.turn = Game.TURN_BLACK
+
+           
+            
+            """
+            if i < len(self.statelist)-1:
+                time.sleep(0.2)
+                i += 1
+                self.board_desc = self.statelist[i]
+            """
+            
 
 def parseBoardFromFile(file_name, size):
     with open(file_name, "r") as fi:
@@ -158,10 +236,18 @@ basic_board.points[29] = Board.STONE_BLACK
 basic_board.points[80] = Board.STONE_WHITE # last place
 '''
 
+def main(board=None):
+    if not board:
+        basic_board = parseBoardFromFile("config.goconf", 9)
+    else:
+        basic_board = board
+    (pts_white, pts_black) = basic_board.evaluateBoardState()
+    print("POINTS_WHITE = ", pts_white)
+    print("POINTS_BLACK = ", pts_black)
+    g = GoGUI(basic_board)
+    g.mainLoop()
 
-basic_board = parseBoardFromFile("config.goconf", 9)
-(pts_white, pts_black) = basic_board.evaluateBoardState()
-print("POINTS_WHITE = ", pts_white)
-print("POINTS_BLACK = ", pts_black)
-g = GoGUI(basic_board)
-g.mainLoop()
+if __name__ == '__main__':
+    board = Board.Board()
+    g = GoGUI(board)
+    g.mainLoop()
