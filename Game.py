@@ -3,6 +3,7 @@
 import Board
 import copy
 import random
+import time
 
 TURN_BLACK = 0
 TURN_WHITE = 1
@@ -23,25 +24,42 @@ class Game:
     
     def evalPrisoners(self):
         # Evaluate prisoners
+        self.board_desc.prisoners = []
+        self.board_desc.group_imprisoned_points = []
+
         for idx, point in enumerate(self.board_desc.points):
             if point != Board.POINT_EMPTY:
                 if self.board_desc.checkIfPrisoner(idx,point):
-                    col = 'w' if point == Board.STONE_WHITE else 'b'
-                    self.board_desc.prisoners[idx] = col
+
+                    if point == Board.STONE_WHITE:
+                        col = 'w'
+                        self.black_points += 1
+                    else:
+                        col = 'b'
+                        self.white_points += 1
+
+                    #col = 'w' if point == Board.STONE_WHITE else 'b'
+                    #self.board_desc.prisoners[idx] = col
+                    self.board_desc.points[idx] = Board.POINT_EMPTY
     
+
+    # NOTABENE: biggest cause of slowdown
+    # need a proper way to decide if a game has ended
     def checkTerminal(self):
         free_points = []
         for i,p in enumerate(self.board_desc.points):
             if p == Board.POINT_EMPTY:
                 free_points.append(i)
-
+    
         if self.step > 79 or len(free_points) == 0:
             self.game_ended = True
             self.board_desc.is_terminal = True
+            print("<<REACHED TERMINAL STATE>>")
             return
 
     def takeTurn(self, action):
         
+        t1 = time.time()
         self.checkTerminal()
         self.step += 1
         self.board_desc.points[action] = Board.STONE_WHITE
@@ -49,18 +67,9 @@ class Game:
         # Evaluate prisoners
         self.evalPrisoners()
 
-        for idx, val in enumerate(self.board_desc.prisoners):
-            if val == 'o':
-                continue
-
-            if val == 'w':
-                self.black_points += 1
-            elif val == 'b':
-                self.white_points += 1
-
-            self.board_desc.points[idx] = Board.POINT_EMPTY
-            self.board_desc.prisoners[idx] = 'o'
-
+        
+        t2 = time.time()
+        #print("\t\t\Total takeTurn time = ", t2 - t1)
     
     def takeTurnBlack(self, action):
         
@@ -70,16 +79,6 @@ class Game:
 
         # eval prisoners
         self.evalPrisoners()
-
-        for idx, val in enumerate(self.board_desc.prisoners):
-            if val == 'o':
-                continue
-            if val == 'w':
-                self.black_points += 1
-            elif val == 'b':
-                self.white_points += 1
-            self.board_desc.points[idx] = Board.POINT_EMPTY
-            self.board_desc.prisoners[idx] = 'o'
 
     
     def update(self):
@@ -98,7 +97,16 @@ class Game:
         #print("WHITE's prisones: ", self.white_points)
 
         diff = (p_w - p_b)/(p_w + p_b + 2)
+        
+        '''
+        if diff > 0.3:
+            return 1
+        
+        return 0
+        '''
+
         return diff
+
 
 
 

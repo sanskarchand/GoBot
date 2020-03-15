@@ -31,6 +31,8 @@ class Board:
         self.is_terminal = False # set by Game
         self.resetBoard()
 
+        self.group_imprisoned_points = []
+
     def resetBoard(self):
         self.points = []
         self.territory = []
@@ -227,6 +229,10 @@ class Board:
             return value:
                 True if the stone of color stone_color at index index is a prisoner
         """
+
+        if index in self.group_imprisoned_points:
+            #print("AH, IMMEDAITE HTAAFKASFJASKLFJ S:ALKFJ ")
+            return True
         
         # Obtain the chain that index is part of, if any
         group_list = [index]
@@ -236,6 +242,11 @@ class Board:
         for ind in group_indices:
             total_libs += self.getSingleLiberties(ind)
 
+        if total_libs == 0:
+            for ind in group_indices:
+                if ind not in self.group_imprisoned_points:
+                    self.group_imprisoned_points.append(ind)
+            
 
         return total_libs == 0
     
@@ -252,5 +263,6 @@ class Board:
         result.territory = self.territory.copy()
         result.prisoners = self.prisoners.copy()
         result.is_terminal = self.is_terminal
+        result.group_imprisoned_points = self.group_imprisoned_points.copy()
         
         return result

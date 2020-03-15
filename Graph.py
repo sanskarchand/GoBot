@@ -7,6 +7,9 @@ import random
 import Display
 import time
 
+DEBUG = True
+
+
 """
 [src:http://u.cs.biu.ac.il/~sarit/advai2018/MCTS.pdf]
 
@@ -80,7 +83,7 @@ class Graph:
         self.adjacency_dict = dict()
         self.initial_vertex = None
 
-        self.C = 0.3
+        self.C = 1.44
         self.board_steps = []
 
     
@@ -106,7 +109,7 @@ class Graph:
         
         best_child = self.getBestChild(start_vertex)
         while self.checkChildNotMostVisited(best_child, start_vertex):
-            print("most visited") 
+            print("[NOT_MOST_VISITED]") 
             best_child = self.getBestChild(start_vertex)
 
         return best_child.move
@@ -116,9 +119,25 @@ class Graph:
         #for i in range(root_vertex.getNumAllowedMoves()):
         st = time.process_time()
         while self.checkWithinTimeLimit(st):
-            new_vert = self.ultimateExpansion(root_vertex)
-            utility = self.getFinalUtility(new_vert.game_state) # game state
+            t1 = time.time()
+
+            t_exp_1 = time.time()
+            new_vert = self.ultimateExpansion(root_vertex) # TREEPOLICY
+            t_exp_2 = time.time()
+            #print("\t\tultimate expansion time: ", t_exp_2 - t_exp_1) # highest time
+
+            t_util_1 = time.time()
+            utility = self.getFinalUtility(new_vert.game_state) # game state #DEFAULTPOLICY
+            t_util_2 = time.time()
+            #print("\t\tfinal utility time: ", t_util_2 - t_util_1)
+
+            t_bp_1 = time.time()
             self.backPropagate(new_vert, utility)
+            t_bp_2 = time.time()
+
+            #print("\t\tback propagation time: ", t_bp_2 - t_bp_1)
+            t2 = time.time()
+            #print("^\t\t\toverall time = ", t2 - t1)
 
 
         best_child = self.getBestOfAllChildren(root_vertex)
@@ -135,19 +154,23 @@ class Graph:
 
     def getBestOfAllChildren(self, vertex):
 
-        if len(vertex.children) == 0:
-            return
-        
+        assert(len( vertex.children ) != 0)
+        print(" No of children for {} =".format((vertex.name)), len(vertex.children))
+
         # NOTABENE: assumption of constant order
         value_list = []
         for child in vertex.children:
-            value_list.append( self._UCB1_value(vertex, child) )
-        
+            val = self._UCB1_value(vertex, child)
+            print("\t\t\t\tutility value of {} = ".format(child.name), val)
+            value_list.append(val)
+
         maximum = max(value_list)
         max_ind = value_list.index(maximum)
 
         return vertex.children[max_ind]
+    
 
+    ## Tree policy
     def ultimateExpansion(self, vertex):
         # C = ?
         while not vertex.game_state.board_desc.is_terminal:
@@ -162,12 +185,21 @@ class Graph:
 
         return vertex
     
+    # default policy
     def getFinalUtility(self, vert_game_state):
+        
+        if DEBUG:
+            print("\t\t\tgetFinalUtility called")
 
         while not vert_game_state.game_ended:
+
+            t1 = time.time()
             if not vert_game_state.board_desc.getPossibleMoveList():
                 break
             action = random.choice(vert_game_state.board_desc.getPossibleMoveList())
+            if DEBUG:
+                print("\t\t\t[gfu]takeTurn ", action)
+
             vert_game_state =  copy.copy(vert_game_state)
             vert_game_state.takeTurn(action)
 
@@ -178,15 +210,19 @@ class Graph:
                     free_moves.append(i)
 
             p_choice = random.choice(free_moves)
+            
+            vert_game_state = copy.copy(vert_game_state)
             vert_game_state.takeTurnBlack(p_choice)
+
+            t2 = time.time()
+            #print("\t\t\tgetFinalUtility total time = ", t2 - t1)
 
             #self.gui.board_desc = vert_game_state.board_desc
             #self.board_steps.append(vert_game_state.board_desc)
             #RECORD
+        util_val = vert_game_state.getUtility() 
+        return util_val 
 
-        
-        return vert_game_state.getUtility()
-    
     def backPropagate(self, vertex, utility):
         while vertex is not None:
             vertex.num_visited += 1
@@ -203,5 +239,5 @@ class Graph:
     
     def checkWithinTimeLimit(self, start):
         elapsed_time = time.process_time() - start
-        return elapsed_time < 10
+        return elapsed_time < 30
 

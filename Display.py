@@ -1,7 +1,9 @@
 import pygame as pg
 import Board, Game, Graph
 import time
+import os
 
+IMAGE_DIR = "GAME_SEQUENCE"
 WIDTH = 640
 HEIGHT = 640
 
@@ -108,11 +110,13 @@ class GoGUI:
             p_y = int(self.starty + required_dy * pad_y)
             
             pg.draw.circle(self.screen, stone_col, (p_x,p_y), self.stone_rad, 0) # width 0, fill
-
+            
+            '''
             if self.draw_prisoners:
                 val = self.board_desc.prisoners[idx]
                 if val != 'o':
                     pg.draw.circle(self.screen, PINK_1, (p_x, p_y), self.stone_rad-10, 0)
+            '''
     
     def drawTerritory(self):
 
@@ -141,9 +145,32 @@ class GoGUI:
             if rect.collidepoint(mouse_pos):
                 return idx
         return None
+    
+    def scoreGame(self, board_desc):
+        wt, bt, wp, bp = board_desc.evaluateBoardState()
+        self.board_desc = board_desc
+        print("END OF GAME")
+        print("Prisoners of White: ", wp)
+        print("Prisoners of Black: ", bp)
+        print("Territory of White: ", wt)
+        print("Territory of Black: ", bt)
+        self.draw_territory = True
+
+    def updateAndSave(self, seq_no):
+        self.screen.fill(BLUE_1)
+        self.drawGrid()
+        self.debugDrawRects()
+        self.drawStones()
+        if self.draw_territory:
+            self.drawTerritory()
+        pg.display.flip()
+
+        pg.image.save(self.screen, "GAME_SEQUENCE/" + str(seq_no) + ".jpg")
+
 
     def mainLoop(self):
-        i = 0 
+        i = 0
+        x = 0       # counter to generate gameplay images
         #Initialization of game
         first_state = self.board_desc
         game = Game.Game(first_state)
@@ -151,11 +178,22 @@ class GoGUI:
         root_vertex = Graph.Vertex(game, "root")
     
         self.placeCollideRects()
+        
+        # dir for saving image sequence
+        if not os.path.exists(IMAGE_DIR):
+            os.mkdir(IMAGE_DIR)
+
+        # first display
+        if x == 0:
+            self.updateAndSave("throwaway")
 
         while True:
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     return
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_s:
+                        self.scoreGame()
 
             left_butn, _, _ = pg.mouse.get_pressed()
             mouse_pos = pg.mouse.get_pos()
@@ -163,32 +201,47 @@ class GoGUI:
             
             if game.turn == Game.TURN_BLACK:
                 res = self.getBlackAction(left_butn, mouse_pos)
+
                 if res is not None:
                     game.turn = Game.TURN_WHITE
                     game.takeTurnBlack(res)
-
+                    self.updateAndSave(x)
+                    x += 1
+            '''
             self.screen.fill(BLUE_1)
             self.drawGrid()
-            self.drawStones()
             self.debugDrawRects()
+            self.drawStones()
             if self.draw_territory:
                 self.drawTerritory()
             pg.display.flip()
+            '''
+
             
 
              
             if game.turn != Game.TURN_BLACK:
-                print("WHITE TO GO")
+                
                 new_root_vert = Graph.Vertex(game, "root")
-                print("board state is: ")
+                print("[PRE-MOVE-WHITE] board state is: ")
                 for i,pt in enumerate(game.board_desc.points):
                     if pt != Board.POINT_EMPTY:
-                        print("p=", i)
+                        print("p=", i,end='')
+                print("")
+
                 best_move = search_graph.monteCarloWithUCTSearch(new_root_vert)
                 print("SEARCH FINISHED")
                 print("BEST MOVE = ", best_move)
+                print("[IMM-MOVE-WHITE] board state is:")
+                for i,pt in enumerate(game.board_desc.points):
+                    if pt != Board.POINT_EMPTY:
+                        print("p=", i, end='')
+                print("")
+
                 game.takeTurn(best_move)
                 game.turn = Game.TURN_BLACK
+                self.updateAndSave(x)
+                x += 1
 
            
             
